@@ -124,19 +124,19 @@ async function generateHuggingFaceImage(prompt: string): Promise<string | null> 
     return null;
   }
 
-  // Use HuggingFace's router which routes to inference providers
-  // Models available via hf-inference provider
+  // Models to try - FLUX.1-dev for quality, schnell for speed
   const models = [
-    { name: 'black-forest-labs/FLUX.1-dev', steps: 28, provider: 'hf-inference' },
-    { name: 'black-forest-labs/FLUX.1-schnell', steps: 4, provider: 'hf-inference' },
-    { name: 'stabilityai/stable-diffusion-xl-base-1.0', steps: 20, provider: 'hf-inference' },
+    'black-forest-labs/FLUX.1-dev',
+    'black-forest-labs/FLUX.1-schnell',
   ];
 
   for (const model of models) {
     try {
-      // Use the new router endpoint
+      console.log(`Trying HuggingFace model: ${model}`);
+      
+      // Use the correct router endpoint for text-to-image
       const response = await fetch(
-        `https://router.huggingface.co/hf-inference/models/${model.name}`,
+        `https://router.huggingface.co/hf-inference/models/${model}`,
         {
           method: 'POST',
           headers: {
@@ -145,49 +145,55 @@ async function generateHuggingFaceImage(prompt: string): Promise<string | null> 
           },
           body: JSON.stringify({
             inputs: prompt,
-            parameters: {
-              width: 1024,
-              height: 1024,
-              num_inference_steps: model.steps,
-              guidance_scale: 3.5,
-            },
           }),
         }
       );
 
+      console.log(`HuggingFace ${model} response status:`, response.status);
+
       if (response.ok) {
         const contentType = response.headers.get('content-type') || '';
+        console.log(`HuggingFace ${model} content-type:`, contentType);
         
         // Check if response is an image
         if (contentType.includes('image')) {
           const blob = await response.blob();
           const buffer = Buffer.from(await blob.arrayBuffer());
           const base64 = buffer.toString('base64');
+          console.log(`HuggingFace ${model} SUCCESS - got image`);
           return `data:${contentType};base64,${base64}`;
         }
         
-        // Some providers return JSON with base64 or URL
-        const data = await response.json();
-        if (data.image) {
-          return data.image;
-        }
-        if (data[0]?.generated_image) {
-          return `data:image/png;base64,${data[0].generated_image}`;
+        // Try parsing as JSON (some endpoints return base64 in JSON)
+        try {
+          const data = await response.json();
+          if (data.image) {
+            return data.image;
+          }
+          if (Array.isArray(data) && data[0]?.image) {
+            return data[0].image;
+          }
+        } catch {
+          // Not JSON, might be raw bytes
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const base64 = buffer.toString('base64');
+          return `data:image/png;base64,${base64}`;
         }
       }
 
       const errorText = await response.text();
-      console.log(`HuggingFace ${model.name} failed:`, response.status, errorText);
+      console.log(`HuggingFace ${model} failed:`, response.status, errorText.slice(0, 200));
       
-      // If rate limited, model loading, or gone, try next model
-      if (response.status === 503 || response.status === 429 || response.status === 410 || response.status === 402) {
+      // Continue to next model on certain errors
+      if (response.status === 503 || response.status === 429 || response.status === 402 || response.status === 404) {
         continue;
       }
     } catch (err) {
-      console.log(`HuggingFace ${model.name} error:`, err);
+      console.log(`HuggingFace ${model} error:`, err);
     }
   }
 
+  console.log('All HuggingFace models failed, falling back to SVG');
   return null;
 }
 
