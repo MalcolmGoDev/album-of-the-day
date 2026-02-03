@@ -138,9 +138,44 @@ export async function POST(request: NextRequest) {
     const tracks = generateTracks(description, mood, 5);
     const genre = pick(genres);
     
-    // Generate image using picsum.photos (extremely reliable)
-    const randomId = Math.floor(Math.random() * 1000);
-    const imageUrl = `https://picsum.photos/seed/${randomId}/512/512`;
+    // Generate image using Hugging Face Inference API (free)
+    const moodStyle = {
+      positive: 'warm golden light, vibrant colors, hopeful sunrise',
+      negative: 'moody blue tones, rain, melancholic twilight',
+      neutral: 'minimalist, muted tones, contemplative urban'
+    };
+    const imagePrompt = `album cover art, vinyl record aesthetic, ${moodStyle[mood]}, abstract artistic, professional photography, cinematic, no text no words no letters`;
+    
+    let imageUrl = '';
+    
+    try {
+      // Call Hugging Face Inference API
+      const hfResponse = await fetch(
+        'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ inputs: imagePrompt }),
+        }
+      );
+      
+      if (hfResponse.ok) {
+        const blob = await hfResponse.blob();
+        const buffer = await blob.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        imageUrl = `data:image/jpeg;base64,${base64}`;
+      } else {
+        // Fallback to placeholder
+        const randomId = Math.floor(Math.random() * 1000);
+        imageUrl = `https://picsum.photos/seed/${randomId}/512/512`;
+      }
+    } catch {
+      // Fallback to placeholder
+      const randomId = Math.floor(Math.random() * 1000);
+      imageUrl = `https://picsum.photos/seed/${randomId}/512/512`;
+    }
 
     return NextResponse.json({
       title,
