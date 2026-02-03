@@ -225,6 +225,11 @@ async function generateHuggingFaceImage(prompt: string): Promise<string | null> 
           },
           body: JSON.stringify({
             inputs: prompt,
+            parameters: {
+              negative_prompt: 'oversaturated, HDR, perfect symmetry, smooth skin, lens flare, watermark, text, letters, words, generic, clip art',
+              guidance_scale: 7.5,
+              num_inference_steps: 30,
+            },
           }),
         }
       );
@@ -393,29 +398,129 @@ export async function POST(request: NextRequest) {
     const tracks = generateTracks(keywords, description);
     const genre = pick(genres);
     
-    // Create image prompt from description - make it vivid and specific for album art
-    const artStyles = [
-      'digital illustration with bold colors and creative typography',
-      'surreal dreamlike artwork with vibrant colors',
-      'retro vintage aesthetic with modern twist',
-      'psychedelic art with swirling patterns and bright colors',
-      'minimalist design with striking visual element',
-      'collage style mixed media artwork',
-      'cinematic landscape with dramatic lighting',
-      'pop art inspired bold graphic design',
-      'ethereal fantasy illustration',
-      'urban street art graffiti style',
+    // === IMPROVED PROMPT GENERATION (based on album art research) ===
+    
+    // Artist/designer references by genre category
+    const genreArtStyles: Record<string, string[]> = {
+      electronic: [
+        'Peter Saville meets Bauhaus aesthetic, geometric precision',
+        'Warp Records style, abstract digital glitch art',
+        '80s synth album aesthetic, neon grid on black void',
+        'Berlin techno minimal, stark industrial photography',
+      ],
+      rock: [
+        'Hipgnosis surrealist style, impossible visual metaphor',
+        'Storm Thorgerson inspired, conceptual photography',
+        'punk zine aesthetic, photocopied and torn edges',
+        'grunge era photography, grainy and raw',
+      ],
+      ambient: [
+        '4AD Records ethereal style, Vaughan Oliver inspired',
+        'Brian Eno ambient aesthetic, soft gradients and horizons',
+        'Japanese minimalism, vast negative space',
+        'Rothko-inspired color field, meditative abstraction',
+      ],
+      hiphop: [
+        'bold street photography, dramatic shadows',
+        'collage art with vintage magazine cutouts',
+        'Def Jam era bold typography and portraits',
+        'abstract expressionist with urban elements',
+      ],
+      indie: [
+        'lo-fi Polaroid aesthetic, faded and intimate',
+        'hand-drawn illustration with visible imperfections',
+        'found photography with cryptic cropping',
+        'Sub Pop grunge aesthetic, raw and unpolished',
+      ],
+      jazz: [
+        'Blue Note Records style, high contrast black and white',
+        'Reid Miles typography and bold geometry',
+        'smokey club photography, single spotlight drama',
+        'Impulse Records bold color blocks',
+      ],
+    };
+    
+    // Map genre to style category
+    const genreCategory = 
+      ['Electronic', 'Synthwave', 'Darkwave', 'Chillwave'].includes(genre) ? 'electronic' :
+      ['Indie Rock', 'Post-Rock', 'Shoegaze'].includes(genre) ? 'rock' :
+      ['Ambient', 'Dream Pop', 'Lo-Fi'].includes(genre) ? 'ambient' :
+      ['Trip-Hop', 'Neo-Soul'].includes(genre) ? 'hiphop' :
+      ['Alternative', 'Bedroom Pop', 'Art Pop'].includes(genre) ? 'indie' : 'jazz';
+    
+    const artistStyle = pick(genreArtStyles[genreCategory] || genreArtStyles.indie);
+    
+    // Imperfection modifiers (adds character, fights AI's "perfect" tendency)
+    const imperfections = [
+      'visible film grain, slightly faded',
+      'subtle print registration errors, vintage feel',
+      'high contrast with crushed blacks',
+      'muted colors with slight color cast',
+      'soft focus edges, sharp center',
+      'overexposed highlights, moody',
+      'underexposed with rich shadows',
+      'cross-processed color shift',
     ];
-    const artStyle = pick(artStyles);
+    const imperfection = pick(imperfections);
     
-    const moodStyle = mood === 'positive' ? 'vibrant, energetic, warm golden light, celebratory' : 
-                      mood === 'negative' ? 'moody, dramatic shadows, deep blues and purples, emotional' : 
-                      'dreamy, soft pastels mixed with bold accents, contemplative';
+    // Limited color palettes (constraint creates power)
+    const colorPalettes = {
+      positive: [
+        'warm duotone, orange and teal only',
+        'golden hour palette, amber and soft blue',
+        'two-tone: coral pink and deep navy',
+        'limited palette: yellow ochre, cream, and black',
+      ],
+      negative: [
+        'cold duotone, cyan and black only',
+        'monochrome blue with single red accent',
+        'desaturated with deep purple shadows',
+        'limited palette: charcoal, slate, and bone white',
+      ],
+      neutral: [
+        'sepia duotone with cream highlights',
+        'two-tone: sage green and warm grey',
+        'muted earth tones only, no pure colors',
+        'black and white with single color accent',
+      ],
+    };
+    const colorPalette = pick(colorPalettes[mood]);
     
+    // Composition directives (not always centered!)
+    const compositions = [
+      'asymmetrical composition, subject off-center left',
+      'extreme negative space, tiny subject',
+      'tight cropped close-up, abstract detail',
+      'Dutch angle, tilted perspective',
+      'birds eye view, looking down',
+      'horizon line at very top of frame',
+      'subject partially cropped at edge',
+      'layered depth, foreground blur',
+    ];
+    const composition = pick(compositions);
+    
+    // Conceptual tension (pair opposites for memorability)
+    const tensionConcepts = [
+      'beauty in decay',
+      'stillness amid chaos',
+      'familiar made strange',
+      'intimate yet distant',
+      'nature reclaiming technology',
+      'solitude in a crowd',
+      'warmth in cold spaces',
+      'order emerging from entropy',
+    ];
+    const tension = pick(tensionConcepts);
+    
+    // Build the subject from keywords with conceptual depth
     const keywordHints = keywords.slice(0, 3).join(', ');
     const subject = keywordHints || description.slice(0, 50);
     
-    const imagePrompt = `Professional music album cover art, ${artStyle}, ${moodStyle}, inspired by: ${subject}. Square format, visually striking, suitable for ${genre} music, high detail, artistic composition, no text or letters`;
+    // Construct the prompt with all elements
+    const imagePrompt = `Album cover art. ${artistStyle}. ${composition}. Theme: ${subject}, conveying ${tension}. ${colorPalette}. ${imperfection}. Square format, no text, no letters, no words, no titles. Artistic, evocative, memorable.`;
+    
+    // Log the prompt for debugging
+    console.log('Generated art prompt:', imagePrompt);
     
     // Try HuggingFace AI first, fall back to procedural SVG
     let imageUrl = await generateHuggingFaceImage(imagePrompt);
