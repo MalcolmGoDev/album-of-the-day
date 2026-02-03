@@ -138,14 +138,9 @@ export async function POST(request: NextRequest) {
     const tracks = generateTracks(description, mood, 5);
     const genre = pick(genres);
     
-    // Generate image using Unsplash Source API (free, instant, always works)
-    const moodKeywords = {
-      positive: 'colorful,sunrise,vibrant,abstract',
-      negative: 'dark,moody,rain,night',
-      neutral: 'minimal,urban,abstract,texture'
-    };
-    const randomSig = Math.floor(Math.random() * 100000);
-    const imageUrl = `https://source.unsplash.com/512x512/?${moodKeywords[mood]}&sig=${randomSig}`;
+    // Generate image using picsum.photos (extremely reliable)
+    const randomId = Math.floor(Math.random() * 1000);
+    const imageUrl = `https://picsum.photos/seed/${randomId}/512/512`;
 
     return NextResponse.json({
       title,
