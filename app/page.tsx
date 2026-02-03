@@ -105,8 +105,8 @@ export default function Home() {
             {/* Vinyl Record + Album Cover Container */}
             <div className="max-w-lg mx-auto">
               <div className="relative flex items-center justify-center">
-                {/* Vinyl Record (behind album) */}
-                <div className="absolute right-0 w-[85%] aspect-square translate-x-[30%]">
+                {/* Vinyl Record (behind album) - just peeking out */}
+                <div className="absolute right-0 w-[75%] aspect-square translate-x-[15%]">
                   {/* Outer vinyl */}
                   <div className="w-full h-full rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black shadow-2xl">
                     {/* Vinyl grooves */}
