@@ -138,17 +138,14 @@ export async function POST(request: NextRequest) {
     const tracks = generateTracks(description, mood, 5);
     const genre = pick(genres);
     
-    // Generate image using Pollinations.ai (free, no API key needed)
-    // Keep prompt simple to avoid issues
+    // Generate image using Unsplash Source API (free, instant, always works)
     const moodKeywords = {
-      positive: 'vibrant colorful sunrise warm golden light',
-      negative: 'moody blue twilight rain melancholic',
-      neutral: 'minimalist urban cityscape muted tones'
+      positive: 'colorful,sunrise,vibrant,abstract',
+      negative: 'dark,moody,rain,night',
+      neutral: 'minimal,urban,abstract,texture'
     };
-    const simplePrompt = `album cover art, ${moodKeywords[mood]}, abstract, artistic, professional, square format`;
-    const encodedPrompt = encodeURIComponent(simplePrompt);
-    const seed = Math.floor(Math.random() * 100000);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&seed=${seed}&model=flux`;
+    const randomSig = Math.floor(Math.random() * 100000);
+    const imageUrl = `https://source.unsplash.com/512x512/?${moodKeywords[mood]}&sig=${randomSig}`;
 
     return NextResponse.json({
       title,
