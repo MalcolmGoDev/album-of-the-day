@@ -102,56 +102,84 @@ export default function Home() {
         {/* Album Cover Result */}
         {album && (
           <div className="animate-fade-in">
-            {/* CD Case */}
-            <div className="max-w-md mx-auto">
-              <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-2 shadow-2xl">
-                {/* Jewel case shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent rounded-lg pointer-events-none" />
-                
-                {/* Album artwork */}
-                <div className="relative aspect-square rounded overflow-hidden bg-gray-800">
-                  <img
-                    src={album.imageUrl}
-                    alt={`${album.title} album cover`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      e.currentTarget.src = `https://picsum.photos/seed/${Date.now()}/512/512`;
-                    }}
-                  />
-                  {/* Loading shimmer */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
-                  
-                  {/* Overlay with album info */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30">
-                    {/* Top - Artist name */}
-                    <div className="absolute top-4 left-4 right-4">
-                      <p className="text-white/90 text-sm font-medium tracking-widest uppercase">
-                        {album.artist}
-                      </p>
+            {/* Vinyl Record + Album Cover Container */}
+            <div className="max-w-lg mx-auto">
+              <div className="relative flex items-center justify-center">
+                {/* Vinyl Record (behind album) */}
+                <div className="absolute right-0 w-[85%] aspect-square translate-x-[30%]">
+                  {/* Outer vinyl */}
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black shadow-2xl">
+                    {/* Vinyl grooves */}
+                    <div className="absolute inset-[3%] rounded-full border border-gray-700/50" />
+                    <div className="absolute inset-[8%] rounded-full border border-gray-700/30" />
+                    <div className="absolute inset-[15%] rounded-full border border-gray-700/30" />
+                    <div className="absolute inset-[22%] rounded-full border border-gray-700/30" />
+                    <div className="absolute inset-[30%] rounded-full border border-gray-700/30" />
+                    {/* Vinyl shine */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/5 to-transparent" />
+                    {/* Center label */}
+                    <div className="absolute inset-[35%] rounded-full bg-gradient-to-br from-purple-900 via-purple-800 to-purple-950 flex items-center justify-center">
+                      <div className="text-center p-2">
+                        <div className="w-3 h-3 rounded-full bg-gray-900 mx-auto mb-1" />
+                        <p className="text-[8px] text-purple-300/80 font-medium uppercase tracking-wider truncate max-w-[80px]">
+                          {album.artist}
+                        </p>
+                      </div>
                     </div>
-                    
-                    {/* Bottom - Album title */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
-                        {album.title}
-                      </h2>
-                      <p className="mt-1 text-white/60 text-sm">{album.genre}</p>
-                    </div>
+                    {/* Inner ring around label */}
+                    <div className="absolute inset-[33%] rounded-full border border-gray-600/50" />
                   </div>
                 </div>
-              </div>
 
-              {/* CD spine effect */}
-              <div className="h-2 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 rounded-b-lg mx-1" />
+                {/* Album Cover (on top) */}
+                <div className="relative z-10 w-[75%] bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-1.5 shadow-2xl">
+                  {/* Album artwork */}
+                  <div className="relative aspect-square rounded overflow-hidden bg-gray-800">
+                    <img
+                      src={album.imageUrl}
+                      alt={`${album.title} album cover`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://picsum.photos/seed/${Date.now()}/512/512`;
+                      }}
+                    />
+                    
+                    {/* Overlay with album info */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30">
+                      {/* Top - Artist name */}
+                      <div className="absolute top-4 left-4 right-4">
+                        <p className="text-white/90 text-sm font-medium tracking-widest uppercase">
+                          {album.artist}
+                        </p>
+                      </div>
+                      
+                      {/* Bottom - Album title only (no genre) */}
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                          {album.title}
+                        </h2>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Jewel case shine */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent rounded-lg pointer-events-none" />
+                </div>
+              </div>
             </div>
 
             {/* Track List */}
-            <div className="mt-8 max-w-md mx-auto">
+            <div className="mt-10 max-w-md mx-auto">
               <div className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                  Track List
-                </h3>
+                {/* Genre tag */}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                    Track List
+                  </h3>
+                  <span className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 text-xs font-medium">
+                    {album.genre}
+                  </span>
+                </div>
                 <ol className="space-y-2">
                   {album.tracks.map((track, i) => (
                     <li key={i} className="flex items-center gap-3 text-gray-200">
