@@ -109,12 +109,18 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent rounded-lg pointer-events-none" />
                 
                 {/* Album artwork */}
-                <div className="relative aspect-square rounded overflow-hidden">
+                <div className="relative aspect-square rounded overflow-hidden bg-gray-800">
                   <img
                     src={album.imageUrl}
                     alt={`${album.title} album cover`}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback if image fails to load
+                      e.currentTarget.src = `https://picsum.photos/seed/${Date.now()}/512/512`;
+                    }}
                   />
+                  {/* Loading shimmer */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
                   
                   {/* Overlay with album info */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30">

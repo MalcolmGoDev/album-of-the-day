@@ -1,17 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Word pools for creative generation
-const moods = {
-  positive: ['golden', 'electric', 'radiant', 'infinite', 'velvet', 'crystal', 'neon', 'cosmic'],
-  negative: ['fading', 'hollow', 'grey', 'static', 'distant', 'fractured', 'shadowed', 'drifting'],
-  neutral: ['endless', 'parallel', 'analog', 'midnight', 'chrome', 'lunar', 'echo', 'silent'],
+// Richer word pools
+const adjectives = {
+  positive: ['Golden', 'Electric', 'Radiant', 'Infinite', 'Velvet', 'Crystal', 'Neon', 'Cosmic', 'Brilliant', 'Wild', 'Bright', 'Vivid'],
+  negative: ['Fading', 'Hollow', 'Grey', 'Static', 'Distant', 'Fractured', 'Shadowed', 'Drifting', 'Lost', 'Broken', 'Empty', 'Cold'],
+  neutral: ['Endless', 'Parallel', 'Analog', 'Midnight', 'Chrome', 'Lunar', 'Silent', 'Still', 'Quiet', 'Slow', 'Late', 'Early'],
 };
 
-const nouns = ['hours', 'signals', 'dreams', 'horizons', 'frequencies', 'memories', 'echoes', 'waves', 'nights', 'roads', 'skies', 'cities', 'moments', 'chapters', 'stations'];
+const nouns = ['Hours', 'Signals', 'Dreams', 'Horizons', 'Frequencies', 'Memories', 'Echoes', 'Waves', 'Nights', 'Roads', 'Skies', 'Cities', 'Moments', 'Chapters', 'Stations', 'Waters', 'Mountains', 'Voices', 'Letters', 'Windows', 'Doors', 'Rooms', 'Streets', 'Gardens'];
 
-const bandPrefixes = ['The', 'Young', 'Last', 'Modern', 'Electric', 'Digital', 'Midnight', 'Lost', 'Wild', 'Silent'];
-const bandSuffixes = ['Collective', 'Theory', 'Society', 'Club', 'Experience', 'Movement', 'Project', 'Assembly', 'Alliance', 'Coalition'];
-const bandNouns = ['Daydream', 'Satellite', 'Phantom', 'Reverie', 'Mirage', 'Paradox', 'Cascade', 'Vertigo', 'Aurora', 'Nova'];
+const albumTitleTemplates = [
+  (adj: string, noun: string) => `${adj} ${noun}`,
+  (adj: string, noun: string) => `The ${adj} ${noun}`,
+  (adj: string, noun: string) => `${noun} in ${adj} Light`,
+  (adj: string, noun: string) => `When ${noun} ${adj === 'Lost' ? 'Get Lost' : 'Fall'}`,
+  (adj: string, noun: string) => `${adj}`,
+  (adj: string, noun: string) => `${noun}`,
+  (adj: string, noun: string) => `After the ${noun}`,
+  (adj: string, noun: string) => `Before ${adj} ${noun}`,
+  (adj: string, noun: string) => `${adj} Season`,
+  (adj: string, noun: string) => `The Last ${noun}`,
+  (adj: string, noun: string) => `${noun} for the ${adj}`,
+  (adj: string, noun: string) => `Everything is ${adj}`,
+  (adj: string, noun: string) => `${adj}: Volume I`,
+  (adj: string, noun: string) => `${noun} Don't Lie`,
+  (adj: string, noun: string) => `How to Be ${adj}`,
+];
+
+const bandPrefixes = ['The', 'Young', 'Modern', 'Electric', 'Digital', 'Midnight', 'Lost', 'Wild', 'Silent', 'Pale', 'Dark', 'Bright'];
+const bandNouns = ['Daydream', 'Satellite', 'Phantom', 'Reverie', 'Mirage', 'Paradox', 'Cascade', 'Vertigo', 'Aurora', 'Nova', 'Coast', 'Harbor', 'Weather', 'Radio', 'Cinema', 'Arcade'];
+const bandSuffixes = ['Collective', 'Theory', 'Society', 'Club', 'Experience', 'Movement', 'Project', 'Assembly', 'Orchestra', 'Ensemble'];
 
 const genres = [
   'Alternative', 'Indie Rock', 'Electronic', 'Dream Pop', 'Lo-Fi', 
@@ -19,102 +37,73 @@ const genres = [
   'Art Pop', 'Neo-Soul', 'Trip-Hop', 'Darkwave', 'Bedroom Pop'
 ];
 
-const trackVerbs = ['Waiting', 'Running', 'Falling', 'Drifting', 'Burning', 'Floating', 'Chasing', 'Breaking', 'Finding', 'Leaving'];
-const trackPrepositions = ['Through', 'Into', 'Beyond', 'After', 'Before', 'Without', 'Against', 'Beneath', 'Above', 'Between'];
+const trackTemplates = [
+  (adj: string, noun: string) => `${adj} ${noun}`,
+  (adj: string, noun: string) => `The ${noun}`,
+  (adj: string, noun: string) => `Intro: ${adj}`,
+  (adj: string, noun: string) => `${noun} (${adj} Mix)`,
+  (adj: string, noun: string) => `Waiting for ${noun}`,
+  (adj: string, noun: string) => `${adj} Interlude`,
+  (adj: string, noun: string) => `Through the ${noun}`,
+  (adj: string, noun: string) => `${adj} Again`,
+  (adj: string, noun: string) => `Last ${noun}`,
+  (adj: string, noun: string) => `${noun} Song`,
+  (adj: string, noun: string) => `Outro: ${adj} ${noun}`,
+  (adj: string, noun: string) => `2 AM`,
+  (adj: string, noun: string) => `${adj} Drive`,
+  (adj: string, noun: string) => `${noun} in Motion`,
+];
 
 function detectMood(text: string): 'positive' | 'negative' | 'neutral' {
   const lower = text.toLowerCase();
-  const positiveWords = ['good', 'great', 'happy', 'won', 'success', 'finished', 'completed', 'amazing', 'love', 'fun', 'excited', 'celebrate', 'finally', 'perfect'];
-  const negativeWords = ['bad', 'tired', 'exhausted', 'failed', 'boring', 'stuck', 'frustrated', 'annoying', 'stress', 'anxiety', 'sad', 'terrible', 'awful', 'long'];
+  const positiveWords = ['good', 'great', 'happy', 'won', 'success', 'finished', 'completed', 'amazing', 'love', 'fun', 'excited', 'celebrate', 'finally', 'perfect', 'awesome', 'best'];
+  const negativeWords = ['bad', 'tired', 'exhausted', 'failed', 'boring', 'stuck', 'frustrated', 'annoying', 'stress', 'anxiety', 'sad', 'terrible', 'awful', 'long', 'hard', 'difficult'];
   
-  let positiveCount = positiveWords.filter(w => lower.includes(w)).length;
-  let negativeCount = negativeWords.filter(w => lower.includes(w)).length;
+  const positiveCount = positiveWords.filter(w => lower.includes(w)).length;
+  const negativeCount = negativeWords.filter(w => lower.includes(w)).length;
   
   if (positiveCount > negativeCount) return 'positive';
   if (negativeCount > positiveCount) return 'negative';
   return 'neutral';
 }
 
-function extractKeywords(text: string): string[] {
-  const words = text.toLowerCase()
-    .replace(/[^a-z\s]/g, '')
-    .split(/\s+/)
-    .filter(w => w.length > 3);
-  
-  // Remove common words
-  const stopWords = ['that', 'this', 'with', 'have', 'from', 'they', 'been', 'were', 'said', 'each', 'which', 'their', 'will', 'would', 'there', 'could', 'other', 'into', 'just', 'very', 'some', 'then', 'than', 'when', 'made', 'back'];
-  return words.filter(w => !stopWords.includes(w));
-}
-
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function generateAlbumTitle(description: string, mood: 'positive' | 'negative' | 'neutral'): string {
-  const keywords = extractKeywords(description);
-  const moodWords = moods[mood];
-  
-  const patterns = [
-    () => `${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)} ${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)}`,
-    () => `The ${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)} ${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)}`,
-    () => keywords.length > 0 ? `${keywords[0].charAt(0).toUpperCase() + keywords[0].slice(1)} ${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)}` : `${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)} Days`,
-    () => `${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)} / ${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)}`,
-    () => keywords.length > 1 ? `${keywords[0].charAt(0).toUpperCase() + keywords[0].slice(1)} & ${keywords[1].charAt(0).toUpperCase() + keywords[1].slice(1)}` : `${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)} Vol. ${Math.floor(Math.random() * 3) + 1}`,
-  ];
-  
-  return pick(patterns)();
+function generateAlbumTitle(mood: 'positive' | 'negative' | 'neutral'): string {
+  const adj = pick(adjectives[mood]);
+  const noun = pick(nouns);
+  const template = pick(albumTitleTemplates);
+  return template(adj, noun);
 }
 
 function generateBandName(): string {
-  const patterns = [
-    () => `${pick(bandPrefixes)} ${pick(bandNouns)}`,
-    () => `${pick(bandNouns)} ${pick(bandSuffixes)}`,
-    () => `${pick(bandPrefixes)} ${pick(bandNouns)} ${pick(bandSuffixes)}`,
-    () => pick(bandNouns),
-    () => `${pick(bandNouns)} & The ${pick(bandSuffixes)}`,
-  ];
-  
-  return pick(patterns)();
+  const r = Math.random();
+  if (r < 0.3) return `${pick(bandPrefixes)} ${pick(bandNouns)}`;
+  if (r < 0.5) return pick(bandNouns);
+  if (r < 0.7) return `${pick(bandNouns)} ${pick(bandSuffixes)}`;
+  if (r < 0.85) return `${pick(bandPrefixes)} ${pick(bandNouns)} ${pick(bandSuffixes)}`;
+  return `${pick(bandNouns)} & ${pick(bandNouns)}`;
 }
 
-function generateTracks(description: string, mood: 'positive' | 'negative' | 'neutral', count: number = 5): string[] {
-  const keywords = extractKeywords(description);
-  const moodWords = moods[mood];
+function generateTracks(mood: 'positive' | 'negative' | 'neutral', count: number = 5): string[] {
   const tracks: string[] = [];
-  
-  const patterns = [
-    () => `${pick(trackVerbs)} ${pick(trackPrepositions)} ${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)} ${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)}`,
-    () => `${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)} ${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)}`,
-    () => keywords.length > 0 ? `${keywords[Math.floor(Math.random() * keywords.length)].charAt(0).toUpperCase() + keywords[Math.floor(Math.random() * keywords.length)].slice(1)}` : pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1),
-    () => `The ${pick(trackVerbs)} ${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)}`,
-    () => `${pick(moodWords).charAt(0).toUpperCase() + pick(moodWords).slice(1)} (Interlude)`,
-    () => `${pick(trackPrepositions)} The ${pick(nouns).charAt(0).toUpperCase() + pick(nouns).slice(1)}`,
-  ];
+  const usedTemplates = new Set<number>();
   
   for (let i = 0; i < count; i++) {
-    tracks.push(pick(patterns)());
+    let templateIdx: number;
+    do {
+      templateIdx = Math.floor(Math.random() * trackTemplates.length);
+    } while (usedTemplates.has(templateIdx) && usedTemplates.size < trackTemplates.length);
+    usedTemplates.add(templateIdx);
+    
+    const adj = pick(adjectives[mood]);
+    const noun = pick(nouns);
+    tracks.push(trackTemplates[templateIdx](adj, noun));
   }
   
   return tracks;
-}
-
-function generateImagePrompt(title: string, mood: 'positive' | 'negative' | 'neutral', description: string): string {
-  const moodAesthetics = {
-    positive: 'warm golden light, vibrant colors, uplifting atmosphere, sunrise, hopeful',
-    negative: 'moody blue tones, rain, fog, melancholic, twilight, introspective',
-    neutral: 'balanced composition, muted tones, urban landscape, contemplative, minimalist',
-  };
-  
-  const styles = [
-    'album cover art style',
-    'vinyl record cover aesthetic',
-    'retro 80s album artwork',
-    'modern minimalist album design',
-    'indie rock album cover',
-    'dream pop aesthetic',
-  ];
-  
-  return `${pick(styles)}, ${moodAesthetics[mood]}, abstract artistic interpretation of "${description}", cinematic, professional photography, high quality, square format, no text, no words, no letters`;
 }
 
 export async function POST(request: NextRequest) {
@@ -133,49 +122,24 @@ export async function POST(request: NextRequest) {
     const mood = detectMood(description);
     
     // Generate album metadata
-    const title = generateAlbumTitle(description, mood);
+    const title = generateAlbumTitle(mood);
     const artist = generateBandName();
-    const tracks = generateTracks(description, mood, 5);
+    const tracks = generateTracks(mood, 5);
     const genre = pick(genres);
     
-    // Generate image using Hugging Face Inference API (free)
+    // Generate image using Pollinations with simpler prompt
     const moodStyle = {
-      positive: 'warm golden light, vibrant colors, hopeful sunrise',
-      negative: 'moody blue tones, rain, melancholic twilight',
-      neutral: 'minimalist, muted tones, contemplative urban'
+      positive: 'warm sunrise golden hour vibrant',
+      negative: 'moody rain blue twilight melancholic',
+      neutral: 'minimalist urban muted calm'
     };
-    const imagePrompt = `album cover art, vinyl record aesthetic, ${moodStyle[mood]}, abstract artistic, professional photography, cinematic, no text no words no letters`;
     
-    let imageUrl = '';
+    const styles = ['abstract art', 'oil painting', 'digital art', 'photography', 'illustration', 'surrealism'];
+    const imagePrompt = `${pick(styles)}, ${moodStyle[mood]}, album cover, artistic, beautiful composition`;
+    const seed = Math.floor(Math.random() * 999999);
     
-    try {
-      // Call Hugging Face Inference API
-      const hfResponse = await fetch(
-        'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ inputs: imagePrompt }),
-        }
-      );
-      
-      if (hfResponse.ok) {
-        const blob = await hfResponse.blob();
-        const buffer = await blob.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        imageUrl = `data:image/jpeg;base64,${base64}`;
-      } else {
-        // Fallback to placeholder
-        const randomId = Math.floor(Math.random() * 1000);
-        imageUrl = `https://picsum.photos/seed/${randomId}/512/512`;
-      }
-    } catch {
-      // Fallback to placeholder
-      const randomId = Math.floor(Math.random() * 1000);
-      imageUrl = `https://picsum.photos/seed/${randomId}/512/512`;
-    }
+    // Try Pollinations with enhanced parameter
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=512&height=512&seed=${seed}&enhance=true&nologo=true`;
 
     return NextResponse.json({
       title,
