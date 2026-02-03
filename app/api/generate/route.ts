@@ -116,6 +116,64 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
+// Try to generate image via HuggingFace Inference API
+async function generateHuggingFaceImage(prompt: string): Promise<string | null> {
+  const HF_TOKEN = process.env.HF_TOKEN;
+  if (!HF_TOKEN) {
+    console.log('No HF_TOKEN configured, falling back to SVG');
+    return null;
+  }
+
+  const models = [
+    'black-forest-labs/FLUX.1-schnell',
+    'ByteDance/SDXL-Lightning', 
+    'stabilityai/stable-diffusion-xl-base-1.0',
+  ];
+
+  for (const model of models) {
+    try {
+      const response = await fetch(
+        `https://api-inference.huggingface.co/models/${model}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${HF_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            inputs: prompt,
+            parameters: {
+              width: 512,
+              height: 512,
+              num_inference_steps: 4, // Fast for SDXL-Lightning
+            },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const buffer = Buffer.from(await blob.arrayBuffer());
+        const base64 = buffer.toString('base64');
+        const contentType = response.headers.get('content-type') || 'image/png';
+        return `data:${contentType};base64,${base64}`;
+      }
+
+      const errorText = await response.text();
+      console.log(`HuggingFace ${model} failed:`, response.status, errorText);
+      
+      // If rate limited or model loading, try next model
+      if (response.status === 503 || response.status === 429) {
+        continue;
+      }
+    } catch (err) {
+      console.log(`HuggingFace ${model} error:`, err);
+    }
+  }
+
+  return null;
+}
+
 // Generate SVG album art based on description
 function generateSvgArt(keywords: string[], mood: 'positive' | 'negative' | 'neutral', description: string): string {
   const hash = hashString(description);
@@ -232,8 +290,20 @@ export async function POST(request: NextRequest) {
     const tracks = generateTracks(keywords, description);
     const genre = pick(genres);
     
-    // Generate unique procedural album art
-    const imageUrl = generateSvgArt(keywords, mood, description);
+    // Create image prompt from description
+    const moodStyle = mood === 'positive' ? 'vibrant, warm colors, uplifting' : 
+                      mood === 'negative' ? 'dark, moody, atmospheric, melancholic' : 
+                      'balanced, neutral tones, contemplative';
+    const keywordHints = keywords.slice(0, 3).join(', ');
+    const imagePrompt = `Album cover art, ${genre} music style, ${moodStyle}, abstract artistic interpretation of: ${keywordHints || description.slice(0, 50)}, professional album artwork, high quality`;
+    
+    // Try HuggingFace AI first, fall back to procedural SVG
+    let imageUrl = await generateHuggingFaceImage(imagePrompt);
+    const isAiGenerated = imageUrl !== null;
+    
+    if (!imageUrl) {
+      imageUrl = generateSvgArt(keywords, mood, description);
+    }
 
     return NextResponse.json({
       title,
@@ -241,6 +311,7 @@ export async function POST(request: NextRequest) {
       tracks,
       genre,
       imageUrl,
+      isAiGenerated, // Let frontend know if it's AI or procedural
     });
 
   } catch (error) {
