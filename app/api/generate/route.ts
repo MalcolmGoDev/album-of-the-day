@@ -139,11 +139,16 @@ export async function POST(request: NextRequest) {
     const genre = pick(genres);
     
     // Generate image using Pollinations.ai (free, no API key needed)
-    const imagePrompt = generateImagePrompt(title, mood, description);
-    const encodedPrompt = encodeURIComponent(imagePrompt);
-    // Use seed for consistency and model parameter
-    const seed = Math.floor(Math.random() * 1000000);
-    const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=512&height=512&seed=${seed}&nologo=true&model=flux`;
+    // Keep prompt simple to avoid issues
+    const moodKeywords = {
+      positive: 'vibrant colorful sunrise warm golden light',
+      negative: 'moody blue twilight rain melancholic',
+      neutral: 'minimalist urban cityscape muted tones'
+    };
+    const simplePrompt = `album cover art, ${moodKeywords[mood]}, abstract, artistic, professional, square format`;
+    const encodedPrompt = encodeURIComponent(simplePrompt);
+    const seed = Math.floor(Math.random() * 100000);
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&seed=${seed}&model=flux`;
 
     return NextResponse.json({
       title,
