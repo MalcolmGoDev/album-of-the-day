@@ -141,7 +141,9 @@ export async function POST(request: NextRequest) {
     // Generate image using Pollinations.ai (free, no API key needed)
     const imagePrompt = generateImagePrompt(title, mood, description);
     const encodedPrompt = encodeURIComponent(imagePrompt);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true`;
+    // Use seed for consistency and model parameter
+    const seed = Math.floor(Math.random() * 1000000);
+    const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=512&height=512&seed=${seed}&nologo=true&model=flux`;
 
     return NextResponse.json({
       title,
