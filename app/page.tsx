@@ -108,7 +108,7 @@ export default function Home() {
             <div className="max-w-lg mx-auto">
               <div className="relative flex items-center justify-center">
                 {/* Vinyl Record (behind album) - showing center label */}
-                <div className="absolute right-0 w-[70%] aspect-square translate-x-[35%]">
+                <div className="absolute right-0 w-[60%] aspect-square translate-x-[45%]">
                   {/* Outer vinyl */}
                   <div className="w-full h-full rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black shadow-2xl">
                     {/* Vinyl grooves */}
