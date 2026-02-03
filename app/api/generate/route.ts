@@ -42,22 +42,55 @@ function detectMood(text: string): 'positive' | 'negative' | 'neutral' {
 }
 
 function generateAlbumTitle(keywords: string[], mood: string): string {
+  // Evocative standalone titles (used when keywords are weak)
+  const standalonePositive = ['Golden Hour', 'Bright Side', 'Wide Awake', 'New Light', 'Full Bloom', 'Good News', 'Rising Tide'];
+  const standaloneNegative = ['After Dark', 'Low Light', 'Grey Skies', 'Long Nights', 'Fading Out', 'The Fallout', 'Heavy Weather'];
+  const standaloneNeutral = ['In Between', 'Halfway There', 'The Middle', 'On Hold', 'Somewhere', 'Floating', 'Passing Through'];
+  
   if (keywords.length === 0) {
-    const fallbacks = ['Untitled', 'The Album', 'Chapter One', 'Day One'];
-    return pick(fallbacks);
+    if (mood === 'positive') return pick(standalonePositive);
+    if (mood === 'negative') return pick(standaloneNegative);
+    return pick(standaloneNeutral);
   }
   
+  const kw1 = capitalize(keywords[0]);
+  const kw2 = keywords.length > 1 ? capitalize(keywords[1]) : null;
+  
   const templates = [
-    () => capitalize(keywords[0]),
-    () => `The ${capitalize(keywords[0])}`,
-    () => keywords.length > 1 ? `${capitalize(keywords[0])} ${capitalize(keywords[1])}` : capitalize(keywords[0]),
-    () => `${capitalize(keywords[0])} Days`,
-    () => `After ${capitalize(keywords[0])}`,
-    () => `${capitalize(keywords[0])} Season`,
-    () => keywords.length > 1 ? `${capitalize(keywords[0])} and ${capitalize(keywords[1])}` : `${capitalize(keywords[0])} EP`,
-    () => `The ${capitalize(keywords[0])} Tapes`,
-    () => `${capitalize(keywords[0])} Hours`,
-    () => keywords.length > 2 ? `${capitalize(keywords[0])}, ${capitalize(keywords[1])}, ${capitalize(keywords[2])}` : capitalize(keywords[0]),
+    // Simple but effective
+    () => kw1,
+    () => `The ${kw1}`,
+    () => `${kw1}!`,
+    
+    // Two-word combinations
+    () => kw2 ? `${kw1} ${kw2}` : kw1,
+    () => kw2 ? `${kw1} & ${kw2}` : `${kw1} EP`,
+    
+    // Preposition patterns
+    () => `After ${kw1}`,
+    () => `Before ${kw1}`,
+    () => `Beyond ${kw1}`,
+    () => `Into ${kw1}`,
+    () => `Without ${kw1}`,
+    
+    // Time-based
+    () => `${kw1} Season`,
+    () => `${kw1} Days`,
+    () => `The ${kw1} Years`,
+    () => `${kw1} at Midnight`,
+    
+    // Poetic/evocative
+    () => `Songs About ${kw1}`,
+    () => `Notes on ${kw1}`,
+    () => `Letters to ${kw1}`,
+    () => `Postcards from ${kw1}`,
+    () => `A Study in ${kw1}`,
+    
+    // Self-titled style
+    () => `${kw1} (Deluxe)`,
+    () => `The ${kw1} Sessions`,
+    () => `${kw1} Tapes`,
+    () => `${kw1}, Vol. 1`,
   ];
   
   return pick(templates)();
@@ -72,34 +105,81 @@ function generateBandName(): string {
 
 function generateTracks(keywords: string[], description: string): string[] {
   const tracks: string[] = [];
-  const usedKeywords = new Set<string>();
+  const usedTitles = new Set<string>();
   
-  const trackPatterns = [
-    (kw: string) => capitalize(kw),
-    (kw: string) => `The ${capitalize(kw)}`,
-    (kw: string) => `${capitalize(kw)} (Reprise)`,
-    (kw: string) => `Waiting for ${capitalize(kw)}`,
-    (kw: string) => `${capitalize(kw)} Song`,
-    (kw: string) => `Late Night ${capitalize(kw)}`,
-    (kw: string) => `${capitalize(kw)} Blues`,
-    (kw: string) => `${capitalize(kw)} in the Morning`,
-    (kw: string) => `${capitalize(kw)} Again`,
-    (kw: string) => `Remember ${capitalize(kw)}`,
+  // Evocative words to mix with keywords
+  const timeWords = ['Midnight', 'Dawn', 'Dusk', 'Golden Hour', '3 AM', 'Sunday', 'Last Night', 'Tomorrow'];
+  const placeWords = ['Downtown', 'Rooftop', 'Highway', 'Coastline', 'Bedroom', 'Backyard', 'Nowhere'];
+  const emotionWords = ['Honeyed', 'Bitter', 'Electric', 'Faded', 'Burning', 'Frozen', 'Tender', 'Wild'];
+  const actionVerbs = ['Running', 'Falling', 'Drifting', 'Chasing', 'Burning', 'Fading', 'Dreaming', 'Waiting'];
+  
+  // Different title pattern categories (ensures variety)
+  const patternCategories = [
+    // One-word evocative titles
+    () => pick([...emotionWords, ...actionVerbs, 'Overthinking', 'Dissolve', 'Static', 'Bloom', 'Haze', 'Shimmer', 'Echoes', 'Satellites']),
+    
+    // Question titles
+    (kw: string) => pick([
+      `What If ${capitalize(kw)}?`,
+      `Where Did ${capitalize(kw)} Go?`,
+      `Who Needs ${capitalize(kw)}?`,
+      `Why ${capitalize(kw)}?`,
+      `Is This ${capitalize(kw)}?`,
+      'Are We There Yet?',
+      'How Did We Get Here?',
+    ]),
+    
+    // Time + emotion/action
+    () => `${pick(timeWords)} ${pick([...emotionWords, ...actionVerbs])}`,
+    
+    // "The [Adjective] [Noun]" pattern
+    (kw: string) => `The ${pick(['Last', 'First', 'Only', 'Same', 'Other', 'Long', 'Short', 'Quiet', 'Loud'])} ${capitalize(kw)}`,
+    
+    // Place-based titles
+    () => `${pick(placeWords)} ${pick(['Dreams', 'Lights', 'Hearts', 'Strangers', 'Silence', 'Thunder', 'Honey'])}`,
+    
+    // Verb-ing titles
+    (kw: string) => `${pick(actionVerbs)} ${pick(['Into', 'Through', 'Away From', 'Toward', 'Without'])} ${capitalize(kw)}`,
+    
+    // Metaphorical/poetic
+    () => pick([
+      'Paper Airplanes', 'Glass Houses', 'Silver Linings', 'Broken Clocks',
+      'Empty Pockets', 'Heavy Hearts', 'Thin Walls', 'Open Windows',
+      'Closed Doors', 'Crooked Smiles', 'Parallel Lines', 'Static Noise',
+    ]),
+    
+    // Number-based titles
+    () => pick(['4 AM', 'Track 7', '22', '1000 Miles', 'Exit 49', 'Room 212', 'Year Zero']),
+    
+    // Opposites/contrasts
+    (kw: string) => `${capitalize(kw)} & ${pick(['Dust', 'Shadows', 'Light', 'Fire', 'Ice', 'Silence', 'Thunder'])}`,
+    
+    // Short phrases
+    () => pick([
+      'Not Yet', 'Almost There', 'Too Late', 'Right Now', 'One More Time',
+      'Start Over', 'Let Go', 'Hold On', 'Come Back', 'Stay Here',
+      'Good Enough', 'Never Mind', 'So What', 'Oh Well', 'What Now',
+    ]),
   ];
   
+  // Shuffle patterns to ensure variety
+  const shuffledPatterns = [...patternCategories].sort(() => Math.random() - 0.5);
+  
   for (let i = 0; i < 5; i++) {
-    if (i < keywords.length && !usedKeywords.has(keywords[i])) {
-      usedKeywords.add(keywords[i]);
-      const pattern = trackPatterns[i % trackPatterns.length];
-      tracks.push(pattern(keywords[i]));
-    } else if (keywords.length > 0) {
-      const kw = keywords[Math.floor(Math.random() * keywords.length)];
-      const pattern = pick(trackPatterns);
-      tracks.push(pattern(kw));
-    } else {
-      const fallbacks = ['Intro', 'Interlude', 'Outro', 'Track ' + (i + 1), 'Untitled'];
-      tracks.push(fallbacks[i]);
+    const pattern = shuffledPatterns[i % shuffledPatterns.length];
+    const kw = keywords[i % Math.max(keywords.length, 1)] || 'love';
+    
+    let title = pattern(kw);
+    
+    // Ensure no duplicates
+    let attempts = 0;
+    while (usedTitles.has(title) && attempts < 10) {
+      title = pattern(keywords[Math.floor(Math.random() * Math.max(keywords.length, 1))] || 'time');
+      attempts++;
     }
+    
+    usedTitles.add(title);
+    tracks.push(title);
   }
   
   return tracks;
