@@ -124,16 +124,17 @@ async function generateHuggingFaceImage(prompt: string): Promise<string | null> 
     return null;
   }
 
+  // FLUX.1-dev for best quality (non-commercial), with fallbacks
   const models = [
-    'black-forest-labs/FLUX.1-schnell',
-    'ByteDance/SDXL-Lightning', 
-    'stabilityai/stable-diffusion-xl-base-1.0',
+    { name: 'black-forest-labs/FLUX.1-dev', steps: 28 },
+    { name: 'black-forest-labs/FLUX.1-schnell', steps: 4 },
+    { name: 'stabilityai/stable-diffusion-xl-base-1.0', steps: 20 },
   ];
 
   for (const model of models) {
     try {
       const response = await fetch(
-        `https://api-inference.huggingface.co/models/${model}`,
+        `https://api-inference.huggingface.co/models/${model.name}`,
         {
           method: 'POST',
           headers: {
@@ -143,9 +144,10 @@ async function generateHuggingFaceImage(prompt: string): Promise<string | null> 
           body: JSON.stringify({
             inputs: prompt,
             parameters: {
-              width: 512,
-              height: 512,
-              num_inference_steps: 4, // Fast for SDXL-Lightning
+              width: 1024,
+              height: 1024,
+              num_inference_steps: model.steps,
+              guidance_scale: 3.5, // Good for FLUX
             },
           }),
         }
@@ -160,14 +162,14 @@ async function generateHuggingFaceImage(prompt: string): Promise<string | null> 
       }
 
       const errorText = await response.text();
-      console.log(`HuggingFace ${model} failed:`, response.status, errorText);
+      console.log(`HuggingFace ${model.name} failed:`, response.status, errorText);
       
       // If rate limited or model loading, try next model
       if (response.status === 503 || response.status === 429) {
         continue;
       }
     } catch (err) {
-      console.log(`HuggingFace ${model} error:`, err);
+      console.log(`HuggingFace ${model.name} error:`, err);
     }
   }
 
