@@ -292,12 +292,29 @@ export async function POST(request: NextRequest) {
     const tracks = generateTracks(keywords, description);
     const genre = pick(genres);
     
-    // Create image prompt from description
-    const moodStyle = mood === 'positive' ? 'vibrant, warm colors, uplifting' : 
-                      mood === 'negative' ? 'dark, moody, atmospheric, melancholic' : 
-                      'balanced, neutral tones, contemplative';
+    // Create image prompt from description - make it vivid and specific for album art
+    const artStyles = [
+      'digital illustration with bold colors and creative typography',
+      'surreal dreamlike artwork with vibrant colors',
+      'retro vintage aesthetic with modern twist',
+      'psychedelic art with swirling patterns and bright colors',
+      'minimalist design with striking visual element',
+      'collage style mixed media artwork',
+      'cinematic landscape with dramatic lighting',
+      'pop art inspired bold graphic design',
+      'ethereal fantasy illustration',
+      'urban street art graffiti style',
+    ];
+    const artStyle = pick(artStyles);
+    
+    const moodStyle = mood === 'positive' ? 'vibrant, energetic, warm golden light, celebratory' : 
+                      mood === 'negative' ? 'moody, dramatic shadows, deep blues and purples, emotional' : 
+                      'dreamy, soft pastels mixed with bold accents, contemplative';
+    
     const keywordHints = keywords.slice(0, 3).join(', ');
-    const imagePrompt = `Album cover art, ${genre} music style, ${moodStyle}, abstract artistic interpretation of: ${keywordHints || description.slice(0, 50)}, professional album artwork, high quality`;
+    const subject = keywordHints || description.slice(0, 50);
+    
+    const imagePrompt = `Professional music album cover art, ${artStyle}, ${moodStyle}, inspired by: ${subject}. Square format, visually striking, suitable for ${genre} music, high detail, artistic composition, no text or letters`;
     
     // Try HuggingFace AI first, fall back to procedural SVG
     let imageUrl = await generateHuggingFaceImage(imagePrompt);
