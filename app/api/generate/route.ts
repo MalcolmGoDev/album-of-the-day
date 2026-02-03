@@ -25,7 +25,6 @@ function extractKeywords(text: string): string[] {
     .split(/\s+/)
     .filter(w => w.length > 2 && !stopWords.has(w));
   
-  // Remove duplicates, keep order
   return [...new Set(words)];
 }
 
@@ -75,7 +74,6 @@ function generateTracks(keywords: string[], description: string): string[] {
   const tracks: string[] = [];
   const usedKeywords = new Set<string>();
   
-  // Make tracks from actual keywords
   const trackPatterns = [
     (kw: string) => capitalize(kw),
     (kw: string) => `The ${capitalize(kw)}`,
@@ -89,25 +87,127 @@ function generateTracks(keywords: string[], description: string): string[] {
     (kw: string) => `Remember ${capitalize(kw)}`,
   ];
   
-  // Use keywords for tracks
   for (let i = 0; i < 5; i++) {
     if (i < keywords.length && !usedKeywords.has(keywords[i])) {
       usedKeywords.add(keywords[i]);
       const pattern = trackPatterns[i % trackPatterns.length];
       tracks.push(pattern(keywords[i]));
     } else if (keywords.length > 0) {
-      // Reuse a keyword with different pattern
       const kw = keywords[Math.floor(Math.random() * keywords.length)];
       const pattern = pick(trackPatterns);
       tracks.push(pattern(kw));
     } else {
-      // Fallback generic tracks
       const fallbacks = ['Intro', 'Interlude', 'Outro', 'Track ' + (i + 1), 'Untitled'];
       tracks.push(fallbacks[i]);
     }
   }
   
   return tracks;
+}
+
+// Generate a hash from string for consistent randomness
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+// Generate SVG album art based on description
+function generateSvgArt(keywords: string[], mood: 'positive' | 'negative' | 'neutral', description: string): string {
+  const hash = hashString(description);
+  const rand = (i: number) => ((hash * (i + 1) * 9301 + 49297) % 233280) / 233280;
+  
+  // Color palettes based on mood
+  const palettes = {
+    positive: [
+      ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3'],
+      ['#F8B500', '#FF6F61', '#6B5B95', '#88B04B'],
+      ['#FC913A', '#F9D423', '#EDE574', '#E1F5C4'],
+    ],
+    negative: [
+      ['#2C3E50', '#34495E', '#7F8C8D', '#1A1A2E'],
+      ['#0F0F0F', '#232323', '#4A4A4A', '#2D132C'],
+      ['#1B1B3A', '#2E2E5E', '#4B4B7C', '#6A6A9A'],
+    ],
+    neutral: [
+      ['#E8D5B7', '#B8860B', '#D4A574', '#8B7355'],
+      ['#A0A0A0', '#707070', '#505050', '#303030'],
+      ['#DDD5D0', '#C9B8A8', '#9A8873', '#6E5E4E'],
+    ],
+  };
+  
+  const palette = palettes[mood][Math.floor(rand(0) * palettes[mood].length)];
+  const bgColor = palette[0];
+  const accentColors = palette.slice(1);
+  
+  // Generate shapes based on keywords
+  let shapes = '';
+  const numShapes = 5 + Math.floor(rand(1) * 8);
+  
+  for (let i = 0; i < numShapes; i++) {
+    const color = accentColors[Math.floor(rand(i + 10) * accentColors.length)];
+    const opacity = 0.3 + rand(i + 20) * 0.6;
+    const shapeType = Math.floor(rand(i + 30) * 4);
+    
+    if (shapeType === 0) {
+      // Circle
+      const cx = rand(i + 40) * 512;
+      const cy = rand(i + 50) * 512;
+      const r = 30 + rand(i + 60) * 150;
+      shapes += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" opacity="${opacity}"/>`;
+    } else if (shapeType === 1) {
+      // Rectangle
+      const x = rand(i + 70) * 400;
+      const y = rand(i + 80) * 400;
+      const w = 50 + rand(i + 90) * 200;
+      const h = 50 + rand(i + 100) * 200;
+      const rotation = rand(i + 110) * 360;
+      shapes += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color}" opacity="${opacity}" transform="rotate(${rotation} ${x + w/2} ${y + h/2})"/>`;
+    } else if (shapeType === 2) {
+      // Line/stroke
+      const x1 = rand(i + 120) * 512;
+      const y1 = rand(i + 130) * 512;
+      const x2 = rand(i + 140) * 512;
+      const y2 = rand(i + 150) * 512;
+      const strokeWidth = 5 + rand(i + 160) * 30;
+      shapes += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${strokeWidth}" opacity="${opacity}" stroke-linecap="round"/>`;
+    } else {
+      // Triangle
+      const cx = rand(i + 170) * 512;
+      const cy = rand(i + 180) * 512;
+      const size = 50 + rand(i + 190) * 150;
+      const points = `${cx},${cy - size} ${cx - size * 0.866},${cy + size * 0.5} ${cx + size * 0.866},${cy + size * 0.5}`;
+      shapes += `<polygon points="${points}" fill="${color}" opacity="${opacity}"/>`;
+    }
+  }
+  
+  // Add some texture/noise overlay
+  const noiseId = `noise-${hash}`;
+  
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+    <defs>
+      <filter id="${noiseId}">
+        <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" result="noise"/>
+        <feColorMatrix type="saturate" values="0"/>
+        <feBlend in="SourceGraphic" in2="noise" mode="multiply"/>
+      </filter>
+      <linearGradient id="grad-${hash}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:${bgColor};stop-opacity:1" />
+        <stop offset="100%" style="stop-color:${accentColors[0]};stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <rect width="512" height="512" fill="url(#grad-${hash})"/>
+    ${shapes}
+    <rect width="512" height="512" fill="transparent" filter="url(#${noiseId})" opacity="0.15"/>
+  </svg>`;
+  
+  // Convert to base64 data URL
+  const base64 = Buffer.from(svg).toString('base64');
+  return `data:image/svg+xml;base64,${base64}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -132,18 +232,8 @@ export async function POST(request: NextRequest) {
     const tracks = generateTracks(keywords, description);
     const genre = pick(genres);
     
-    // Generate image that MATCHES the description
-    const moodColors = {
-      positive: 'warm golden bright vibrant sunrise',
-      negative: 'dark moody blue rain twilight',
-      neutral: 'soft muted calm peaceful serene'
-    };
-    
-    // Use actual keywords in image prompt
-    const keywordStr = keywords.slice(0, 3).join(' ');
-    const imagePrompt = `album cover art, ${keywordStr}, ${moodColors[mood]}, artistic, abstract, professional, beautiful`;
-    const seed = Math.floor(Math.random() * 999999);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=512&height=512&seed=${seed}&nologo=true`;
+    // Generate unique procedural album art
+    const imageUrl = generateSvgArt(keywords, mood, description);
 
     return NextResponse.json({
       title,
